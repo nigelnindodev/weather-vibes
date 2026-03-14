@@ -83,7 +83,7 @@ export function WeatherApp() {
           setIsLoadingLocation(false);
         }
       },
-      (err) => {
+      (_err) => {
         setError('Unable to get your location. Please enable location access.');
         setIsLoadingLocation(false);
       }
