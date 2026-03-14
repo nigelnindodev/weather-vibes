@@ -1,4 +1,6 @@
-# Weather App
+# Weather Vibes
+
+"Vibes" may be a misnormer here; effort has gone into creating a feasible local setup with open code. And additions here are being reviewed to a high degree (as of now, more autonomy with tests and CI/CD).
 
 A beautiful, modern weather application built with Next.js, TypeScript, and Tailwind CSS. Uses the Open-Meteo API for free, no-API-key weather data.
 
