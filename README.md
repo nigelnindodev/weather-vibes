@@ -1,36 +1,98 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Weather App
 
-## Getting Started
+A beautiful, modern weather application built with Next.js, TypeScript, and Tailwind CSS. Uses the Open-Meteo API for free, no-API-key weather data.
 
-First, run the development server:
+## Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **Current Weather Display** - Temperature, weather conditions, humidity, wind speed, and feels-like temperature
+- **5-Day Forecast** - Extended forecast with daily high/low temperatures
+- **Location Search** - Search for any city worldwide with autocomplete
+- **Geolocation Support** - Get weather for your current location
+- **Unit Toggle** - Switch between Celsius and Fahrenheit (persisted)
+- **Dynamic Backgrounds** - Background gradient changes based on weather conditions and time of day
+- **Responsive Design** - Works on mobile, tablet, and desktop
+- **Smooth Animations** - Polished transitions using Framer Motion
+
+## Tech Stack
+
+- **Framework**: Next.js 14 (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **Weather API**: Open-Meteo (free, no API key required)
+- **State Management**: TanStack Query (React Query)
+- **Animations**: Framer Motion
+- **Icons**: Lucide React
+
+## Architecture
+
+```
+src/
+├── app/                    # Next.js App Router pages
+│   ├── layout.tsx          # Root layout with providers
+│   ├── page.tsx            # Main weather page
+│   └── globals.css         # Global styles
+├── components/
+│   ├── Providers.tsx       # React Query provider
+│   └── weather/
+│       ├── WeatherApp.tsx      # Main app component
+│       ├── CurrentWeather.tsx  # Current conditions display
+│       ├── Forecast.tsx        # 5-day forecast
+│       ├── SearchBar.tsx       # City search with autocomplete
+│       ├── UnitToggle.tsx      # °C/°F toggle
+│       └── WeatherIcon.tsx     # Weather condition icons
+├── hooks/
+│   └── useWeather.ts       # Weather data fetching hooks
+├── lib/
+│   ├── api.ts              # Open-Meteo API calls
+│   └── utils.ts            # Helpers and constants
+└── types/
+    └── weather.ts          # TypeScript interfaces
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Setup
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Prerequisites
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Node.js 18+ 
+- npm
 
-## Learn More
+### Installation
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+# Install dependencies
+npm install
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Start development server
+npm run dev
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Deploy on Vercel
+### Build for Production
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm run build
+npm start
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Deployment
+
+This app is ready for Vercel deployment:
+
+```bash
+# Install Vercel CLI
+npm i -g vercel
+
+# Deploy
+vercel
+```
+
+Or connect your GitHub repository to Vercel for automatic deployments.
+
+## API
+
+This project uses [Open-Meteo](https://open-meteo.com/), a free, open-source weather API that requires no API key.
+
+## License
+
+MIT
