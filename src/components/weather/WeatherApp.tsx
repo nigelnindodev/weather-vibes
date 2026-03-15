@@ -10,7 +10,6 @@ import { CurrentWeather } from './CurrentWeather';
 import { Forecast } from './Forecast';
 import { UnitToggle } from './UnitToggle';
 import { getWeatherGradientClass, getStoredUnit, setStoredUnit, getStoredLocation, setStoredLocation } from '@/lib/utils';
-import { reverseGeocode } from '@/lib/api';
 
 export function WeatherApp() {
   const [location, setLocation] = useState<GeoLocation | null>(null);
@@ -29,7 +28,7 @@ export function WeatherApp() {
   const fetchLocationAndWeather = useCallback(async (latitude: number, longitude: number, saveLocation: boolean = true) => {
     const currentRequestId = ++requestIdRef.current;
     
-    // Set location immediately with fallback name so weather query can start
+    // Set location immediately so weather query can start
     const initialLocation: GeoLocation = {
       id: 0,
       name: 'Current Location',
@@ -41,34 +40,13 @@ export function WeatherApp() {
     setCityName('Current Location');
     setIsLoadingLocation(true);
     
-    // Try reverse geocoding in background
-    try {
-      const name = await reverseGeocode(latitude, longitude);
-      
-      // Only update if this request is still current
-      if (currentRequestId === requestIdRef.current) {
-        const updatedLocation: GeoLocation = {
-          id: 0,
-          name,
-          latitude,
-          longitude,
-          country: '',
-        };
-        setLocation(updatedLocation);
-        setCityName(name);
-        if (saveLocation) {
-          setStoredLocation(latitude, longitude, name);
-        }
-      }
-    } catch {
-      // Keep using "Current Location" as fallback
-      if (saveLocation && currentRequestId === requestIdRef.current) {
-        setStoredLocation(latitude, longitude, 'Current Location');
-      }
-    } finally {
-      if (currentRequestId === requestIdRef.current) {
-        setIsLoadingLocation(false);
-      }
+    // Save location after a short delay to allow weather query to start
+    if (saveLocation) {
+      setStoredLocation(latitude, longitude, 'Current Location');
+    }
+    
+    if (currentRequestId === requestIdRef.current) {
+      setIsLoadingLocation(false);
     }
   }, []);
 
