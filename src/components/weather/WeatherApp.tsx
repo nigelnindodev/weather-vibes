@@ -16,6 +16,7 @@ export function WeatherApp() {
   const [unit, setUnit] = useState<TemperatureUnit>('celsius');
   const [cityName, setCityName] = useState('');
   const [isInitializing, setIsInitializing] = useState(true);
+  const [isGeolocated, setIsGeolocated] = useState(false);
   const [error, setError] = useState('');
 
   const { data: weatherData, isLoading: isWeatherLoading, error: weatherError } = useWeather(
@@ -28,15 +29,16 @@ export function WeatherApp() {
     location?.longitude ?? null
   );
 
-  // Update city name when reverse geocode completes
+  // Update city name when reverse geocode completes (only for geolocated locations)
   useEffect(() => {
-    if (reverseName && location) {
+    if (reverseName && location && isGeolocated) {
       setCityName(reverseName);
       setStoredLocation(location.latitude, location.longitude, reverseName);
     }
-  }, [reverseName, location]);
+  }, [reverseName, location, isGeolocated]);
 
   const handleSelectLocation = useCallback((loc: GeoLocation) => {
+    setIsGeolocated(false);
     setLocation(loc);
     setCityName(loc.name);
     setStoredLocation(loc.latitude, loc.longitude, loc.name);
@@ -53,6 +55,7 @@ export function WeatherApp() {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
+        setIsGeolocated(true);
         setLocation({
           id: 0,
           name: 'Current Location',
@@ -93,6 +96,7 @@ export function WeatherApp() {
         navigator.geolocation.getCurrentPosition(
           (position) => {
             const { latitude, longitude } = position.coords;
+            setIsGeolocated(true);
             setLocation({
               id: 0,
               name: 'Current Location',
@@ -152,7 +156,7 @@ export function WeatherApp() {
                 className="flex items-center gap-2 text-white text-xl"
               >
                 <Loader2 className="w-8 h-8 animate-spin" />
-                {isReverseLoading ? 'Getting your location...' : 'Loading weather data...'}
+                {isReverseLoading ? 'Resolving location name...' : 'Loading weather data...'}
               </motion.div>
             ) : weatherError ? (
               <motion.div
