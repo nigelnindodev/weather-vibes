@@ -105,6 +105,8 @@ function ForecastCard({
       variants={cardVariants}
       className="bg-white/20 backdrop-blur-md rounded-2xl p-3 flex flex-col items-center cursor-pointer"
       whileHover="hover"
+      onMouseEnter={() => setIsExpanded(true)}
+      onMouseLeave={() => setIsExpanded(false)}
       onClick={() => setIsExpanded(!isExpanded)}
       onFocus={() => setIsExpanded(true)}
       onBlur={() => setIsExpanded(false)}
@@ -150,11 +152,11 @@ function ForecastCard({
         )}
       </motion.div>
 
-      {/* Desktop hover-only */}
+      {/* Desktop hover - controlled by parent mouse events */}
       <motion.div
         variants={expandedVariants}
         initial="hidden"
-        whileHover="visible"
+        animate={isExpanded ? 'visible' : 'hidden'}
         className="overflow-hidden mt-1 pt-1 border-t border-white/20 w-full hidden md:block"
       >
         <div className="flex items-center justify-center gap-1 text-white/80 text-xs">
