@@ -1,8 +1,9 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import { 
   Sun, CloudSun, Cloud, CloudFog, CloudDrizzle, CloudRain, 
-  Snowflake, CloudLightning, Cloudy
+  Snowflake, CloudLightning
 } from 'lucide-react';
 
 interface WeatherIconProps {
@@ -10,29 +11,49 @@ interface WeatherIconProps {
   isDay: boolean;
   className?: string;
   size?: number;
+  animate?: boolean;
 }
 
-export function WeatherIcon({ icon, isDay, className = '', size = 24 }: WeatherIconProps) {
-  const iconProps = { className, size };
+export function WeatherIcon({ icon, isDay: _isDay, className = '', size = 24, animate = false }: WeatherIconProps) {
+  const baseProps = { className, size };
   
-  switch (icon) {
-    case 'sun':
-      return isDay ? <Sun {...iconProps} className={`${className} text-yellow-400`} /> : <Cloudy {...iconProps} className={className} />;
-    case 'cloud-sun':
-      return <CloudSun {...iconProps} className={`${className} text-white`} />;
-    case 'cloud':
-      return <Cloud {...iconProps} className={`${className} text-white`} />;
-    case 'cloud-fog':
-      return <CloudFog {...iconProps} className={`${className} text-gray-300`} />;
-    case 'cloud-drizzle':
-      return <CloudDrizzle {...iconProps} className={`${className} text-blue-300`} />;
-    case 'cloud-rain':
-      return <CloudRain {...iconProps} className={`${className} text-blue-400`} />;
-    case 'snowflake':
-      return <Snowflake {...iconProps} className={`${className} text-blue-200`} />;
-    case 'cloud-lightning':
-      return <CloudLightning {...iconProps} className={`${className} text-yellow-400`} />;
-    default:
-      return <Cloud {...iconProps} className={`${className} text-white`} />;
-  }
+  const animatedProps = animate ? {
+    animate: { 
+      scale: [1, 1.1, 1],
+      rotate: [0, 5, -5, 0],
+    },
+    transition: {
+      duration: 3,
+      repeat: Infinity,
+      ease: "easeInOut"
+    }
+  } : {};
+
+  const renderIcon = () => {
+    switch (icon) {
+      case 'sun':
+        const SunComponent = <Sun {...baseProps} className={`${className} text-yellow-400 animate-pulse-soft`} />;
+        return animate ? <motion.div {...animatedProps}>{SunComponent}</motion.div> : SunComponent;
+      case 'cloud-sun':
+        return <CloudSun {...baseProps} className={`${className} text-white`} />;
+      case 'cloud':
+        return <Cloud {...baseProps} className={`${className} text-white`} />;
+      case 'cloud-fog':
+        return <CloudFog {...baseProps} className={`${className} text-gray-300`} />;
+      case 'cloud-drizzle':
+        return <CloudDrizzle {...baseProps} className={`${className} text-blue-300`} />;
+      case 'cloud-rain':
+        return <CloudRain {...baseProps} className={`${className} text-blue-400`} />;
+      case 'snowflake':
+        const SnowComponent = <Snowflake {...baseProps} className={`${className} text-blue-200 animate-pulse-soft`} />;
+        return animate ? <motion.div {...animatedProps}>{SnowComponent}</motion.div> : SnowComponent;
+      case 'cloud-lightning':
+        const LightningComponent = <CloudLightning {...baseProps} className={`${className} text-yellow-400 animate-pulse-soft`} />;
+        return animate ? <motion.div {...animatedProps}>{LightningComponent}</motion.div> : LightningComponent;
+      default:
+        return <Cloud {...baseProps} className={`${className} text-white`} />;
+    }
+  };
+
+  return renderIcon();
 }
