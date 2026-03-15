@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import { useWeather } from '@/hooks/useWeather';
@@ -19,6 +19,7 @@ export function WeatherApp() {
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
   const [error, setError] = useState('');
+  const requestIdRef = useRef(0);
 
   const { data: weatherData, isLoading, error: weatherError } = useWeather(
     location?.latitude ?? null,
@@ -26,29 +27,54 @@ export function WeatherApp() {
   );
 
   const fetchLocationAndWeather = useCallback(async (latitude: number, longitude: number, saveLocation: boolean = true) => {
-    setIsLoadingLocation(true);
-    let name = 'Current Location';
-    try {
-      name = await reverseGeocode(latitude, longitude);
-    } catch {
-      // Use default "Current Location"
-    }
-    const newLocation: GeoLocation = {
+    const currentRequestId = ++requestIdRef.current;
+    
+    // Set location immediately with fallback name so weather query can start
+    const initialLocation: GeoLocation = {
       id: 0,
-      name,
+      name: 'Current Location',
       latitude,
       longitude,
       country: '',
     };
-    setLocation(newLocation);
-    setCityName(name);
-    if (saveLocation) {
-      setStoredLocation(latitude, longitude, name);
+    setLocation(initialLocation);
+    setCityName('Current Location');
+    setIsLoadingLocation(true);
+    
+    // Try reverse geocoding in background
+    try {
+      const name = await reverseGeocode(latitude, longitude);
+      
+      // Only update if this request is still current
+      if (currentRequestId === requestIdRef.current) {
+        const updatedLocation: GeoLocation = {
+          id: 0,
+          name,
+          latitude,
+          longitude,
+          country: '',
+        };
+        setLocation(updatedLocation);
+        setCityName(name);
+        if (saveLocation) {
+          setStoredLocation(latitude, longitude, name);
+        }
+      }
+    } catch {
+      // Keep using "Current Location" as fallback
+      if (saveLocation && currentRequestId === requestIdRef.current) {
+        setStoredLocation(latitude, longitude, 'Current Location');
+      }
+    } finally {
+      if (currentRequestId === requestIdRef.current) {
+        setIsLoadingLocation(false);
+      }
     }
-    setIsLoadingLocation(false);
   }, []);
 
   const handleSelectLocation = useCallback((loc: GeoLocation) => {
+    // Increment requestId to invalidate any pending reverse geocode
+    ++requestIdRef.current;
     setLocation(loc);
     setCityName(loc.name);
     setStoredLocation(loc.latitude, loc.longitude, loc.name);
