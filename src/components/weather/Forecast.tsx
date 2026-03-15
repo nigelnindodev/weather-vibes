@@ -118,12 +118,14 @@ function ForecastCard({
   cardVariants,
   expandedVariants 
 }: ForecastCardProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isPinned, setIsPinned] = useState(false);
+  const [isHoverFocused, setIsHoverFocused] = useState(false);
+  const isExpanded = isPinned || isHoverFocused;
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      setIsExpanded(!isExpanded);
+      setIsPinned(prev => !prev);
     }
   };
 
@@ -132,11 +134,11 @@ function ForecastCard({
       variants={cardVariants}
       className="bg-white/20 backdrop-blur-md rounded-2xl p-3 flex flex-col items-center cursor-pointer"
       whileHover="hover"
-      onMouseEnter={() => setIsExpanded(true)}
-      onMouseLeave={() => setIsExpanded(false)}
-      onClick={() => setIsExpanded(!isExpanded)}
-      onFocus={() => setIsExpanded(true)}
-      onBlur={() => setIsExpanded(false)}
+      onMouseEnter={() => setIsHoverFocused(true)}
+      onMouseLeave={() => setIsHoverFocused(false)}
+      onClick={() => setIsPinned(prev => !prev)}
+      onFocus={() => setIsHoverFocused(true)}
+      onBlur={() => setIsHoverFocused(false)}
       onKeyDown={handleKeyDown}
       tabIndex={0}
       role="button"
