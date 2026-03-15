@@ -13,6 +13,9 @@
 - Run `npm install` and wait for completion before testing builds
 - Verify all checks pass (lint, typecheck, build) before considering task complete
 - When encountering build errors, research and fix the root cause rather than changing versions
+- **Don't keep dev server running** - Only start when needed to verify changes
+- **Start, verify, then close** - Run dev server temporarily to test, then kill it
+- **Always clean up** - Remove `.next` directory before commits/pushes
 
 ## Dependencies
 

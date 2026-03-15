@@ -1,14 +1,36 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { useState } from 'react';
+import { motion, Variants } from 'framer-motion';
 import { WeatherData, TemperatureUnit } from '@/types/weather';
 import { getWeatherCondition, formatTemperature } from '@/lib/api';
 import { getDayName } from '@/lib/utils';
 import { WeatherIcon } from './WeatherIcon';
+import { Droplets } from 'lucide-react';
 
 interface ForecastProps {
   data: WeatherData;
   unit: TemperatureUnit;
+}
+
+function PrecipitationDetails({ precipChance, precipitation, className = '' }: { 
+  precipChance: number; 
+  precipitation: number;
+  className?: string;
+}) {
+  return (
+    <div className={className}>
+      <div className="flex items-center justify-center gap-1 text-white/80 text-xs">
+        <Droplets className="w-3 h-3" />
+        <span>{Math.round(precipChance)}%</span>
+      </div>
+      {precipitation > 0 && (
+        <p className="text-white/60 text-xs text-center">
+          {precipitation.toFixed(1)}mm
+        </p>
+      )}
+    </div>
+  );
 }
 
 export function Forecast({ data, unit }: ForecastProps) {
@@ -24,9 +46,18 @@ export function Forecast({ data, unit }: ForecastProps) {
     }
   };
 
-  const item = {
+  const cardVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0 }
+    show: { opacity: 1, y: 0 },
+    hover: { 
+      scale: 1.05,
+      backgroundColor: 'rgba(255,255,255,0.3)'
+    }
+  };
+
+  const expandedVariants: Variants = {
+    hidden: { height: 0, opacity: 0 },
+    visible: { height: 'auto', opacity: 1 }
   };
 
   return (
@@ -41,30 +72,102 @@ export function Forecast({ data, unit }: ForecastProps) {
         {daily.time.slice(1, 6).map((date, index) => {
           const weatherCode = daily.weather_code[index + 1];
           const condition = getWeatherCondition(weatherCode);
+          const precipitation = daily.precipitation_sum?.[index + 1] ?? 0;
+          const precipChance = daily.precipitation_probability_max?.[index + 1] ?? 0;
           
           return (
-            <motion.div
+            <ForecastCard
               key={date}
-              variants={item}
-              className="bg-white/20 backdrop-blur-md rounded-2xl p-4 flex flex-col items-center"
-            >
-              <p className="text-white/70 text-sm mb-2">{getDayName(date)}</p>
-              <WeatherIcon 
-                icon={condition.icon} 
-                isDay={true} 
-                size={32} 
-                className="mb-2"
-              />
-              <p className="text-white font-semibold">
-                {formatTemperature(daily.temperature_2m_max[index + 1], unit)}
-              </p>
-              <p className="text-white/50 text-sm">
-                {formatTemperature(daily.temperature_2m_min[index + 1], unit)}
-              </p>
-            </motion.div>
+              date={date}
+              index={index}
+              condition={condition}
+              precipitation={precipitation}
+              precipChance={precipChance}
+              daily={daily}
+              unit={unit}
+              cardVariants={cardVariants}
+              expandedVariants={expandedVariants}
+            />
           );
         })}
       </div>
+    </motion.div>
+  );
+}
+
+interface ForecastCardProps {
+  date: string;
+  index: number;
+  condition: { icon: string };
+  precipitation: number;
+  precipChance: number;
+  daily: WeatherData['daily'];
+  unit: TemperatureUnit;
+  cardVariants: Variants;
+  expandedVariants: Variants;
+}
+
+function ForecastCard({ 
+  date, 
+  index, 
+  condition, 
+  precipitation, 
+  precipChance, 
+  daily, 
+  unit, 
+  cardVariants,
+  expandedVariants 
+}: ForecastCardProps) {
+  const [isPinned, setIsPinned] = useState(false);
+  const [isHoverFocused, setIsHoverFocused] = useState(false);
+  const isExpanded = isPinned || isHoverFocused;
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      setIsPinned(prev => !prev);
+    }
+  };
+
+  return (
+    <motion.div
+      variants={cardVariants}
+      className="bg-white/20 backdrop-blur-md rounded-2xl p-3 flex flex-col items-center cursor-pointer"
+      whileHover="hover"
+      onMouseEnter={() => setIsHoverFocused(true)}
+      onMouseLeave={() => setIsHoverFocused(false)}
+      onClick={() => setIsPinned(prev => !prev)}
+      onFocus={() => setIsHoverFocused(true)}
+      onBlur={() => setIsHoverFocused(false)}
+      onKeyDown={handleKeyDown}
+      tabIndex={0}
+      role="button"
+      aria-expanded={isExpanded}
+      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+    >
+      <p className="text-white/70 text-xs md:text-sm mb-1">{getDayName(date)}</p>
+      <WeatherIcon 
+        icon={condition.icon} 
+        isDay={true} 
+        size={28} 
+        className="mb-1"
+      />
+      <p className="text-white font-semibold text-sm md:text-base">
+        {formatTemperature(daily.temperature_2m_max[index + 1], unit)}
+      </p>
+      <p className="text-white/50 text-xs md:text-sm">
+        {formatTemperature(daily.temperature_2m_min[index + 1], unit)}
+      </p>
+      
+      {/* Show on tap/click or hover */}
+      <motion.div
+        variants={expandedVariants}
+        initial="hidden"
+        animate={isExpanded ? 'visible' : 'hidden'}
+        className="overflow-hidden mt-1 pt-1 border-t border-white/20 w-full"
+      >
+        <PrecipitationDetails precipChance={precipChance} precipitation={precipitation} />
+      </motion.div>
     </motion.div>
   );
 }
