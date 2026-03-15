@@ -2,6 +2,25 @@ import { WeatherData, GeoLocation } from '@/types/weather';
 
 const BASE_URL = 'https://api.open-meteo.com/v1';
 const GEO_URL = 'https://geocoding-api.open-meteo.com/v1';
+const NOMINATIM_URL = 'https://nominatim.openstreetmap.org';
+
+export async function reverseGeocode(lat: number, lon: number): Promise<string> {
+  const response = await fetch(
+    `${NOMINATIM_URL}/reverse?format=jsonv2&lat=${lat}&lon=${lon}`,
+    { headers: { 'User-Agent': 'WeatherApp/1.0 (weather-vibes)' } }
+  );
+
+  if (!response.ok) throw new Error('Failed to reverse geocode');
+
+  const data = await response.json();
+  const address = data.address;
+  
+  if (address) {
+    return address.city || address.town || address.village || address.county || 'Current Location';
+  }
+  
+  return 'Current Location';
+}
 
 export async function searchLocations(query: string): Promise<GeoLocation[]> {
   if (!query || query.length < 2) return [];
