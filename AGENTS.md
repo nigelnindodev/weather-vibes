@@ -19,6 +19,7 @@
 - Use latest stable versions of frameworks (Next.js stable, React stable, etc.)
 - Always check for known CVEs in dependency versions
 - Include all required dependencies in package.json before deployment
+- **Use TanStack Query for all external API requests** - This provides caching, retry logic, loading states, and error handling out of the box
 
 ## Dependency Management
 
