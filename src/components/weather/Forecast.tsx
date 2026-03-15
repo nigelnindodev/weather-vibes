@@ -157,22 +157,12 @@ function ForecastCard({
         {formatTemperature(daily.temperature_2m_min[index + 1], unit)}
       </p>
       
-      {/* Mobile: show on tap/click */}
+      {/* Show on tap/click or hover */}
       <motion.div
         variants={expandedVariants}
         initial="hidden"
         animate={isExpanded ? 'visible' : 'hidden'}
-        className="overflow-hidden mt-1 pt-1 border-t border-white/20 w-full md:hidden"
-      >
-        <PrecipitationDetails precipChance={precipChance} precipitation={precipitation} />
-      </motion.div>
-
-      {/* Desktop: show on hover */}
-      <motion.div
-        variants={expandedVariants}
-        initial="hidden"
-        animate={isExpanded ? 'visible' : 'hidden'}
-        className="overflow-hidden mt-1 pt-1 border-t border-white/20 w-full hidden md:block"
+        className="overflow-hidden mt-1 pt-1 border-t border-white/20 w-full"
       >
         <PrecipitationDetails precipChance={precipChance} precipitation={precipitation} />
       </motion.div>
