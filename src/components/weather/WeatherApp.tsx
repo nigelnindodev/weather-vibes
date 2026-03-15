@@ -10,12 +10,14 @@ import { CurrentWeather } from './CurrentWeather';
 import { Forecast } from './Forecast';
 import { UnitToggle } from './UnitToggle';
 import { getWeatherGradientClass, getStoredUnit, setStoredUnit, getStoredLocation, setStoredLocation } from '@/lib/utils';
+import { reverseGeocode } from '@/lib/api';
 
 export function WeatherApp() {
   const [location, setLocation] = useState<GeoLocation | null>(null);
   const [unit, setUnit] = useState<TemperatureUnit>('celsius');
   const [cityName, setCityName] = useState('');
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
   const [error, setError] = useState('');
 
   const { data: weatherData, isLoading, error: weatherError } = useWeather(
@@ -23,20 +25,27 @@ export function WeatherApp() {
     location?.longitude ?? null
   );
 
-  useEffect(() => {
-    const storedUnit = getStoredUnit();
-    setUnit(storedUnit);
-    
-    const storedLoc = getStoredLocation();
-    if (storedLoc) {
-      setLocation({
+  const fetchLocationAndWeather = useCallback(async (latitude: number, longitude: number, saveLocation: boolean = true) => {
+    setIsLoadingLocation(true);
+    try {
+      const name = await reverseGeocode(latitude, longitude);
+      const newLocation: GeoLocation = {
         id: 0,
-        name: storedLoc.name,
-        latitude: storedLoc.lat,
-        longitude: storedLoc.lon,
+        name,
+        latitude,
+        longitude,
         country: '',
-      });
-      setCityName(storedLoc.name);
+      };
+      setLocation(newLocation);
+      setCityName(name);
+      if (saveLocation) {
+        setStoredLocation(latitude, longitude, name);
+      }
+      setError('');
+    } catch {
+      setError('Failed to get location name');
+    } finally {
+      setIsLoadingLocation(false);
     }
   }, []);
 
@@ -55,77 +64,86 @@ export function WeatherApp() {
 
     setIsLoadingLocation(true);
     navigator.geolocation.getCurrentPosition(
-      async (position) => {
+      (position) => {
         const { latitude, longitude } = position.coords;
-        
-        try {
-          const response = await fetch(
-            `https://api.open-meteo.com/v1/geocode/reverse?latitude=${latitude}&longitude=${longitude}`
-          );
-          const data = await response.json();
-          
-          const newLocation: GeoLocation = {
-            id: 0,
-            name: data.results?.[0]?.name || 'Current Location',
-            latitude,
-            longitude,
-            country: data.results?.[0]?.country || '',
-            admin1: data.results?.[0]?.admin1,
-          };
-          
-          setLocation(newLocation);
-          setCityName(newLocation.name);
-          setStoredLocation(latitude, longitude, newLocation.name);
-          setError('');
-        } catch {
-          setError('Failed to get location name');
-        } finally {
-          setIsLoadingLocation(false);
-        }
+        fetchLocationAndWeather(latitude, longitude);
       },
       (_err) => {
         setError('Unable to get your location. Please enable location access.');
         setIsLoadingLocation(false);
       }
     );
-  }, []);
+  }, [fetchLocationAndWeather]);
 
   const handleUnitChange = useCallback((newUnit: TemperatureUnit) => {
     setUnit(newUnit);
     setStoredUnit(newUnit);
   }, []);
 
+  useEffect(() => {
+    const storedUnit = getStoredUnit();
+    setUnit(storedUnit);
+    
+    const storedLoc = getStoredLocation();
+    if (storedLoc) {
+      setLocation({
+        id: 0,
+        name: storedLoc.name,
+        latitude: storedLoc.lat,
+        longitude: storedLoc.lon,
+        country: '',
+      });
+      setCityName(storedLoc.name);
+      setIsInitializing(false);
+    } else {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const { latitude, longitude } = position.coords;
+            fetchLocationAndWeather(latitude, longitude);
+            setIsInitializing(false);
+          },
+          () => {
+            setIsInitializing(false);
+          }
+        );
+      } else {
+        setIsInitializing(false);
+      }
+    }
+  }, [fetchLocationAndWeather]);
+
   const gradientClass = weatherData 
     ? getWeatherGradientClass(weatherData.current.weather_code, weatherData.current.is_day === 1)
     : 'from-blue-400 via-blue-500 to-blue-600';
 
+  const isLoadingOrInitializing = isLoading || isLoadingLocation || isInitializing;
+
   return (
     <div className={`min-h-screen bg-gradient-to-br ${gradientClass} transition-all duration-700`}>
-      <div className="min-h-screen p-4 md:p-8 flex flex-col">
-        <header className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-bold text-white">Weather</h1>
+      <div className="min-h-screen p-4 md:p-6 flex flex-col">
+        <header className="flex flex-col md:flex-row items-center justify-center gap-4 mb-6">
+          <SearchBar 
+            onSelect={handleSelectLocation}
+            onUseCurrentLocation={handleUseCurrentLocation}
+            currentName={cityName}
+          />
           <UnitToggle unit={unit} onChange={handleUnitChange} />
         </header>
-
-        <SearchBar 
-          onSelect={handleSelectLocation}
-          onUseCurrentLocation={handleUseCurrentLocation}
-          currentName={cityName}
-        />
 
         {error && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="bg-red-500/80 text-white px-4 py-2 rounded-xl mt-4 text-center"
+            className="bg-red-500/80 text-white px-4 py-2 rounded-xl mt-2 text-center max-w-md mx-auto"
           >
             {error}
           </motion.div>
         )}
 
-        <main className="flex-1 flex flex-col items-center justify-center mt-8">
+        <main className="flex-1 flex flex-col items-center justify-center mt-4">
           <AnimatePresence mode="wait">
-            {isLoading || isLoadingLocation ? (
+            {isLoadingOrInitializing ? (
               <motion.div
                 key="loading"
                 initial={{ opacity: 0 }}
@@ -134,7 +152,7 @@ export function WeatherApp() {
                 className="flex items-center gap-2 text-white text-xl"
               >
                 <Loader2 className="w-8 h-8 animate-spin" />
-                Loading weather data...
+                {isLoadingLocation ? 'Getting your location...' : 'Loading weather data...'}
               </motion.div>
             ) : weatherError ? (
               <motion.div

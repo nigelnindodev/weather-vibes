@@ -25,7 +25,7 @@ export function CurrentWeather({ data, unit, cityName }: CurrentWeatherProps) {
       transition={{ duration: 0.5 }}
       className="text-center"
     >
-      <h2 className="text-2xl font-semibold text-white mb-1">{cityName}</h2>
+      <h2 className="text-3xl md:text-4xl font-bold text-white mb-1">{cityName}</h2>
       <p className="text-white/70 mb-6">{condition.description}</p>
 
       <div className="flex items-center justify-center mb-6">

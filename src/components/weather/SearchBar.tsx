@@ -35,7 +35,7 @@ export function SearchBar({ onSelect, onUseCurrentLocation, currentName }: Searc
   };
 
   return (
-    <div ref={containerRef} className="relative w-full max-w-md mx-auto">
+    <div ref={containerRef} className="relative w-full">
       <div className="relative">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/70" />
         <input

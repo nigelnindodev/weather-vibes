@@ -2,6 +2,21 @@ import { WeatherData, GeoLocation } from '@/types/weather';
 
 const BASE_URL = 'https://api.open-meteo.com/v1';
 const GEO_URL = 'https://geocoding-api.open-meteo.com/v1';
+const REVERSE_URL = 'https://api.open-meteo.com/v1/geocode';
+
+export async function reverseGeocode(lat: number, lon: number): Promise<string> {
+  const response = await fetch(
+    `${REVERSE_URL}/reverse?latitude=${lat}&longitude=${lon}&count=1&language=en&format=json`
+  );
+  
+  if (!response.ok) throw new Error('Failed to reverse geocode');
+  
+  const data = await response.json();
+  if (data.results && data.results.length > 0) {
+    return data.results[0].name;
+  }
+  throw new Error('No location found');
+}
 
 export async function searchLocations(query: string): Promise<GeoLocation[]> {
   if (!query || query.length < 2) return [];
