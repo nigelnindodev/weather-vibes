@@ -27,26 +27,25 @@ export function WeatherApp() {
 
   const fetchLocationAndWeather = useCallback(async (latitude: number, longitude: number, saveLocation: boolean = true) => {
     setIsLoadingLocation(true);
+    let name = 'Current Location';
     try {
-      const name = await reverseGeocode(latitude, longitude);
-      const newLocation: GeoLocation = {
-        id: 0,
-        name,
-        latitude,
-        longitude,
-        country: '',
-      };
-      setLocation(newLocation);
-      setCityName(name);
-      if (saveLocation) {
-        setStoredLocation(latitude, longitude, name);
-      }
-      setError('');
+      name = await reverseGeocode(latitude, longitude);
     } catch {
-      setError('Failed to get location name');
-    } finally {
-      setIsLoadingLocation(false);
+      // Use default "Current Location"
     }
+    const newLocation: GeoLocation = {
+      id: 0,
+      name,
+      latitude,
+      longitude,
+      country: '',
+    };
+    setLocation(newLocation);
+    setCityName(name);
+    if (saveLocation) {
+      setStoredLocation(latitude, longitude, name);
+    }
+    setIsLoadingLocation(false);
   }, []);
 
   const handleSelectLocation = useCallback((loc: GeoLocation) => {
