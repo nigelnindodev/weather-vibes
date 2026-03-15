@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
-import { useWeather } from '@/hooks/useWeather';
+import { useWeather, useReverseGeocode } from '@/hooks/useWeather';
 import { GeoLocation, TemperatureUnit } from '@/types/weather';
 import { SearchBar } from './SearchBar';
 import { CurrentWeather } from './CurrentWeather';
@@ -15,13 +15,66 @@ export function WeatherApp() {
   const [location, setLocation] = useState<GeoLocation | null>(null);
   const [unit, setUnit] = useState<TemperatureUnit>('celsius');
   const [cityName, setCityName] = useState('');
-  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
+  const [isGeolocated, setIsGeolocated] = useState(false);
   const [error, setError] = useState('');
 
-  const { data: weatherData, isLoading, error: weatherError } = useWeather(
+  const { data: weatherData, isLoading: isWeatherLoading, error: weatherError } = useWeather(
     location?.latitude ?? null,
     location?.longitude ?? null
   );
+
+  const { data: reverseName, isLoading: isReverseLoading } = useReverseGeocode(
+    location?.latitude ?? null,
+    location?.longitude ?? null
+  );
+
+  // Update city name when reverse geocode completes (only for geolocated locations)
+  useEffect(() => {
+    if (reverseName && location && isGeolocated) {
+      setCityName(reverseName);
+      setStoredLocation(location.latitude, location.longitude, reverseName);
+    }
+  }, [reverseName, location, isGeolocated]);
+
+  const handleSelectLocation = useCallback((loc: GeoLocation) => {
+    setIsGeolocated(false);
+    setLocation(loc);
+    setCityName(loc.name);
+    setStoredLocation(loc.latitude, loc.longitude, loc.name);
+    setError('');
+  }, []);
+
+  const handleUseCurrentLocation = useCallback(() => {
+    if (!navigator.geolocation) {
+      setError('Geolocation is not supported by your browser');
+      return;
+    }
+
+    setError('');
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setIsGeolocated(true);
+        setLocation({
+          id: 0,
+          name: 'Current Location',
+          latitude,
+          longitude,
+          country: '',
+        });
+        setCityName('Current Location');
+      },
+      () => {
+        setError('Unable to get your location. Please enable location access.');
+      }
+    );
+  }, []);
+
+  const handleUnitChange = useCallback((newUnit: TemperatureUnit) => {
+    setUnit(newUnit);
+    setStoredUnit(newUnit);
+  }, []);
 
   useEffect(() => {
     const storedUnit = getStoredUnit();
@@ -37,95 +90,64 @@ export function WeatherApp() {
         country: '',
       });
       setCityName(storedLoc.name);
-    }
-  }, []);
-
-  const handleSelectLocation = useCallback((loc: GeoLocation) => {
-    setLocation(loc);
-    setCityName(loc.name);
-    setStoredLocation(loc.latitude, loc.longitude, loc.name);
-    setError('');
-  }, []);
-
-  const handleUseCurrentLocation = useCallback(() => {
-    if (!navigator.geolocation) {
-      setError('Geolocation is not supported by your browser');
-      return;
-    }
-
-    setIsLoadingLocation(true);
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
-        
-        try {
-          const response = await fetch(
-            `https://api.open-meteo.com/v1/geocode/reverse?latitude=${latitude}&longitude=${longitude}`
-          );
-          const data = await response.json();
-          
-          const newLocation: GeoLocation = {
-            id: 0,
-            name: data.results?.[0]?.name || 'Current Location',
-            latitude,
-            longitude,
-            country: data.results?.[0]?.country || '',
-            admin1: data.results?.[0]?.admin1,
-          };
-          
-          setLocation(newLocation);
-          setCityName(newLocation.name);
-          setStoredLocation(latitude, longitude, newLocation.name);
-          setError('');
-        } catch {
-          setError('Failed to get location name');
-        } finally {
-          setIsLoadingLocation(false);
-        }
-      },
-      (_err) => {
-        setError('Unable to get your location. Please enable location access.');
-        setIsLoadingLocation(false);
+      setIsInitializing(false);
+    } else {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const { latitude, longitude } = position.coords;
+            setIsGeolocated(true);
+            setLocation({
+              id: 0,
+              name: 'Current Location',
+              latitude,
+              longitude,
+              country: '',
+            });
+            setCityName('Current Location');
+            setIsInitializing(false);
+          },
+          () => {
+            setIsInitializing(false);
+          }
+        );
+      } else {
+        setIsInitializing(false);
       }
-    );
-  }, []);
-
-  const handleUnitChange = useCallback((newUnit: TemperatureUnit) => {
-    setUnit(newUnit);
-    setStoredUnit(newUnit);
+    }
   }, []);
 
   const gradientClass = weatherData 
     ? getWeatherGradientClass(weatherData.current.weather_code, weatherData.current.is_day === 1)
     : 'from-blue-400 via-blue-500 to-blue-600';
 
+  const isLoading = isWeatherLoading || isReverseLoading || isInitializing;
+
   return (
     <div className={`min-h-screen bg-gradient-to-br ${gradientClass} transition-all duration-700`}>
-      <div className="min-h-screen p-4 md:p-8 flex flex-col">
-        <header className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-bold text-white">Weather</h1>
+      <div className="min-h-screen p-4 md:p-6 flex flex-col">
+        <header className="flex flex-col md:flex-row items-center justify-center gap-4 mb-6">
+          <SearchBar 
+            onSelect={handleSelectLocation}
+            onUseCurrentLocation={handleUseCurrentLocation}
+            currentName={cityName}
+          />
           <UnitToggle unit={unit} onChange={handleUnitChange} />
         </header>
-
-        <SearchBar 
-          onSelect={handleSelectLocation}
-          onUseCurrentLocation={handleUseCurrentLocation}
-          currentName={cityName}
-        />
 
         {error && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="bg-red-500/80 text-white px-4 py-2 rounded-xl mt-4 text-center"
+            className="bg-red-500/80 text-white px-4 py-2 rounded-xl mt-2 text-center max-w-md mx-auto"
           >
             {error}
           </motion.div>
         )}
 
-        <main className="flex-1 flex flex-col items-center justify-center mt-8">
+        <main className="flex-1 flex flex-col items-center justify-center mt-4">
           <AnimatePresence mode="wait">
-            {isLoading || isLoadingLocation ? (
+            {isLoading ? (
               <motion.div
                 key="loading"
                 initial={{ opacity: 0 }}
@@ -134,7 +156,7 @@ export function WeatherApp() {
                 className="flex items-center gap-2 text-white text-xl"
               >
                 <Loader2 className="w-8 h-8 animate-spin" />
-                Loading weather data...
+                {isReverseLoading ? 'Resolving location name...' : 'Loading weather data...'}
               </motion.div>
             ) : weatherError ? (
               <motion.div
