@@ -13,6 +13,26 @@ interface ForecastProps {
   unit: TemperatureUnit;
 }
 
+function PrecipitationDetails({ precipChance, precipitation, className = '' }: { 
+  precipChance: number; 
+  precipitation: number;
+  className?: string;
+}) {
+  return (
+    <div className={className}>
+      <div className="flex items-center justify-center gap-1 text-white/80 text-xs">
+        <Droplets className="w-3 h-3" />
+        <span>{Math.round(precipChance)}%</span>
+      </div>
+      {precipitation > 0 && (
+        <p className="text-white/60 text-xs text-center">
+          {precipitation.toFixed(1)}mm
+        </p>
+      )}
+    </div>
+  );
+}
+
 export function Forecast({ data, unit }: ForecastProps) {
   const { daily } = data;
 
@@ -100,6 +120,13 @@ function ForecastCard({
 }: ForecastCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      setIsExpanded(!isExpanded);
+    }
+  };
+
   return (
     <motion.div
       variants={cardVariants}
@@ -110,11 +137,7 @@ function ForecastCard({
       onClick={() => setIsExpanded(!isExpanded)}
       onFocus={() => setIsExpanded(true)}
       onBlur={() => setIsExpanded(false)}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          setIsExpanded(!isExpanded);
-        }
-      }}
+      onKeyDown={handleKeyDown}
       tabIndex={0}
       role="button"
       aria-expanded={isExpanded}
@@ -134,40 +157,24 @@ function ForecastCard({
         {formatTemperature(daily.temperature_2m_min[index + 1], unit)}
       </p>
       
-      {/* Expanded details - show on hover, focus, or always on mobile */}
+      {/* Mobile: show on tap/click */}
       <motion.div
         variants={expandedVariants}
         initial="hidden"
         animate={isExpanded ? 'visible' : 'hidden'}
         className="overflow-hidden mt-1 pt-1 border-t border-white/20 w-full md:hidden"
       >
-        <div className="flex items-center justify-center gap-1 text-white/80 text-xs">
-          <Droplets className="w-3 h-3" />
-          <span>{Math.round(precipChance)}%</span>
-        </div>
-        {precipitation > 0 && (
-          <p className="text-white/60 text-xs text-center">
-            {precipitation.toFixed(1)}mm
-          </p>
-        )}
+        <PrecipitationDetails precipChance={precipChance} precipitation={precipitation} />
       </motion.div>
 
-      {/* Desktop hover - controlled by parent mouse events */}
+      {/* Desktop: show on hover */}
       <motion.div
         variants={expandedVariants}
         initial="hidden"
         animate={isExpanded ? 'visible' : 'hidden'}
         className="overflow-hidden mt-1 pt-1 border-t border-white/20 w-full hidden md:block"
       >
-        <div className="flex items-center justify-center gap-1 text-white/80 text-xs">
-          <Droplets className="w-3 h-3" />
-          <span>{Math.round(precipChance)}%</span>
-        </div>
-        {precipitation > 0 && (
-          <p className="text-white/60 text-xs text-center">
-            {precipitation.toFixed(1)}mm
-          </p>
-        )}
+        <PrecipitationDetails precipChance={precipChance} precipitation={precipitation} />
       </motion.div>
     </motion.div>
   );
